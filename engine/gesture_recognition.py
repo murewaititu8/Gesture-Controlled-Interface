@@ -6,6 +6,9 @@ import time
 import cv2
 # OpenCV
 from pathlib import Path
+from gesture_mapping import load_config, lookup_action
+# Turns a recognized gesture into an action name using gesture_config.json
+import pyautogui
 
 pathofModel = str(Path(__file__).parent / "gesture_recognizer.task")
 # __file__ is this script's location, so the model is always found next to it.
@@ -13,6 +16,38 @@ pathofModel = str(Path(__file__).parent / "gesture_recognizer.task")
 
 numofHands = 2
 # Amount of hands being tracked at a single time.
+
+config = load_config()
+# Reads and validates gesture_config.json
+
+pyautogui.PAUSE = 0
+# Removes PyAutoGUI's default delay after every call, which would add lag.
+
+screenW, screenH = pyautogui.size()
+boxMargin = 0.2
+# Only the middle 60% of the camera frame maps to the screen, so you never have to reach the edges.
+smoothing = 0.3
+# Each frame the cursor moves 30% of the way toward the target. Lower = smoother but laggier.
+prevX, prevY = None, None
+# Last cursor position, used for smoothing.
+
+def move_cursor(landmark):
+    global prevX, prevY
+    x = (landmark.x - boxMargin) / (1 - 2 * boxMargin)
+    y = (landmark.y - boxMargin) / (1 - 2 * boxMargin)
+    x = 1 - x
+    # The preview is not mirrored, so moving your hand right moves it left in the image. This flips x.
+    x = min(max(x, 0), 1)
+    y = min(max(y, 0), 1)
+    targetX = 2 + x * (screenW - 5)
+    targetY = 2 + y * (screenH - 5)
+    # Kept 2px from the edges so the cursor never lands in a corner and triggers PyAutoGUI's failsafe.
+    if prevX is None:
+        prevX, prevY = targetX, targetY
+    else:
+        prevX += (targetX - prevX) * smoothing
+        prevY += (targetY - prevY) * smoothing
+    pyautogui.moveTo(prevX, prevY)
 
 latestResult = None
 # Stored as None because no result has been received.
@@ -82,6 +117,7 @@ while cam.isOpened():
             top = gestureList[0]
             # Best gesture guess for hand number i.
             side = result.handedness[i][0].category_name
+            sideKey = side.lower()
             # "Left" or "Right" for hand number i.
             text = f"{side}: {top.category_name} ({top.score:.2f})"
             print(text)
@@ -96,6 +132,18 @@ while cam.isOpened():
             cv2.putText(frame, text, (int(wrist.x * w), int(wrist.y * h) + 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             # Label sits next to each hand's wrist, so you can tell them apart.
+
+            action = lookup_action(config, sideKey, top.category_name, top.score)
+            # Checks what hand + gesture + config does
+
+            if action:
+                print(f" -> {action[0]} ({action[1]})")
+                # Prints action name and kind
+
+                if action[0] == "move_cursor":
+                    move_cursor(landmarks[8])
+                    # Landmark 8 is the index fingertip.
+
     else:
         print("No hand detected")
         cv2.putText(frame, "No hand detected", (20, 40),

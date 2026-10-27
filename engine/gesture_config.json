@@ -1,0 +1,19 @@
+{
+  "confidence_threshold": 0.50,
+  "roles": {
+    "navigation": "Left",
+    "typing": "Right"
+  },
+  "gestures": {
+    "navigation": {
+      "Pointing_Up": { "action": "move_cursor", "kind": "continuous" },
+      "Closed_Fist": { "action": "click",       "kind": "discrete" },
+      "Victory":     { "action": "scroll",      "kind": "continuous" },
+      "Open_Palm":   { "action": "rest",        "kind": "none" },
+      "ILoveYou":    { "action": "toggle_pause","kind": "toggle" },
+      "Thumb_Up":    { "action": "right_click", "kind": "discrete" },
+      "Thumb_Down":  { "action": "back",        "kind": "discrete" }
+    },
+    "typing": {}
+  }
+}

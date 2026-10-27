@@ -27,4 +27,15 @@ Stage 1: Proving MediaPipe can reliably perceive gestures from a live webcam fee
 
 : Added support for two hands early so each hand can be responsible for a different action when doing same gesture.
 
-: 
+27 Oct 2026
+: Created config-driven gesture vocabulary,
+
+: Created validation of the config at load
+
+: Made cursor control design, where Index fingertip was treated as the pointer because it is technically the natural pointing point.
+
+: Confidence threshopld has been set to .50 to leave a wide safety margin.
+
+L Fixed a missing module error that came frm the wrong venv being active.
+
+: Cursor mode was missing from the file, and one of the clues was from "No permission prompt" which led to me realizing that PyAutoGUI was not being called.
