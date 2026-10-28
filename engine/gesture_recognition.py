@@ -49,6 +49,31 @@ def move_cursor(landmark):
         prevY += (targetY - prevY) * smoothing
     pyautogui.moveTo(prevX, prevY)
 
+holdNeeded = 4
+# A gesture must be seen this many frames in a row before it fires. Stops one-frame flickers from clicking.
+cooldown = 0.6
+# Seconds before the same action can fire again.
+heldFrames = {}
+# Consecutive frames each discrete action has been seen.
+hasFired = {}
+# Whether each action already fired during the current hold, so one fist = one click.
+lastFireTime = {}
+
+def do_action(name):
+    # The place where discrete actions turn into real input.
+    if name == "click":
+        pyautogui.click()
+        # Clicks at the current cursor position.
+
+def run_discrete(name):
+    # Called every frame a discrete gesture is visible.
+    heldFrames[name] = heldFrames.get(name, 0) + 1
+    if heldFrames[name] >= holdNeeded and not hasFired.get(name, False):
+        if time.time() - lastFireTime.get(name, 0) >= cooldown:
+            do_action(name)
+            lastFireTime[name] = time.time()
+        hasFired[name] = True
+
 latestResult = None
 # Stored as None because no result has been received.
 # It stores async most recent callback later.
@@ -111,6 +136,9 @@ while cam.isOpened():
     result = latestResult
     # Local snapshot. The callback can overwrite latestResult mid-frame, but not this.
 
+    seenActions = set()
+    # Discrete actions seen this frame. Used to reset the ones that stopped.
+
     if result is not None and result.gestures:
         h, w, _ = frame.shape
         for i, gestureList in enumerate(result.gestures):
@@ -143,11 +171,22 @@ while cam.isOpened():
                 if action[0] == "move_cursor":
                     move_cursor(landmarks[8])
                     # Landmark 8 is the index fingertip.
+                if action[1] == "discrete":
+                    seenActions.add(action[0])
+                    run_discrete(action[0])
 
     else:
         print("No hand detected")
         cv2.putText(frame, "No hand detected", (20, 40),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+
+
+    for name in list(heldFrames):
+        if name not in seenActions:
+            heldFrames[name] = 0
+            hasFired[name] = False
+        # Releasing the gesture resets it, so the next fist can click again.
 
     cv2.imshow("Gesture Recognition", frame)
 

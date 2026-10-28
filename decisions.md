@@ -13,7 +13,7 @@ Stage 1: Proving MediaPipe can reliably perceive gestures from a live webcam fee
 : Keeping OpenCV preview window open(cv2.imshow) while stage goal only requires console input. Makes it easier to see if its actually tracking hand and understand if any debugging is needed
 
 : Printing every frames result instead of only on changes
-: Goal is to see whether the model struggles when dealing with a lot of nouse.
+: Goal is to see whether the model struggles when dealing with a lot of noise.
 : Smoothing will happen later
 
 7 Oct 2026
